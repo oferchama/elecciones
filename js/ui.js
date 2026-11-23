@@ -96,7 +96,16 @@
   ];
   function renderTabs() {
     const bad = S.situations.filter((s) => s.bad && st.situations[s.id]).length;
-    $('#tabs').innerHTML = TABS.map(([id, label]) => `<button class="tab" role="tab" data-action="tab" data-tab="${id}" aria-selected="${ui.tab === id}">${label}${id === 'indicators' && bad ? `<span class="badge" title="Crisis activas">${bad}</span>` : ''}</button>`).join('');
+    const bar = $('#tabs');
+    const keep = bar.scrollLeft;
+    bar.innerHTML = TABS.map(([id, label]) => `<button class="tab" role="tab" data-action="tab" data-tab="${id}" aria-selected="${ui.tab === id}">${label}${id === 'indicators' && bad ? `<span class="badge" title="Crisis activas">${bad}</span>` : ''}</button>`).join('');
+    // En móvil las pestañas no caben: la activa siempre a la vista, y un degradado si quedan más a la derecha
+    bar.scrollLeft = keep;
+    const act = bar.querySelector('[aria-selected="true"]');
+    if (act && (act.offsetLeft < bar.scrollLeft || act.offsetLeft + act.offsetWidth > bar.scrollLeft + bar.clientWidth)) bar.scrollLeft = act.offsetLeft - 24;
+    const edge = () => bar.classList.toggle('more-r', bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 4);
+    edge();
+    if (!bar._edge) { bar._edge = true; bar.addEventListener('scroll', edge, { passive: true }); window.addEventListener('resize', edge); }
   }
 
   // ── Resumen ─────────────────────────────────────────────────
@@ -650,14 +659,73 @@
   const KIND_LABEL = { broken: 'Revés', goal: 'Objetivo', milestone: 'Hito', crisis: 'Fin de la crisis', group: 'Votantes', polls: 'Encuestas', good: 'Buenas noticias', win: 'Elecciones' };
   const ptsLabel = (p) => `${p >= 0 ? '+' : '−'}${Math.abs(p)} puntos`;
   function viewNews() {
-    const ach = st.achievements || [];
+    // Pocas entradas por defecto, para que las redes se vean sin bajar mucho
+    const SHORT = window.innerWidth <= 560 ? 2 : 3;
+    const allAch = st.achievements || [];
+    const ach = ui.newsAll ? allAch : allAch.slice(0, SHORT);
+    const news = ui.newsAll ? st.news : st.news.slice(0, SHORT);
+    const hidden = Math.max(0, allAch.length - ach.length) + Math.max(0, st.news.length - news.length);
+    const toggle = ui.newsAll
+      ? '<button class="btn sm ghost news-more" data-action="news-all" data-v="0">Mostrar menos</button>'
+      : hidden ? `<button class="btn sm ghost news-more" data-action="news-all" data-v="1">Ver todo (${hidden} más)</button>` : '';
     return `<div class="grid g2">
       <div class="card"><div class="card-h"><h3>Logros</h3><span class="faint small">${st.score || 0} puntos</span></div>
         ${ach.length ? `<div class="news-list">${ach.map((a) => `<div class="news"><div class="when">${dateLabel(a.year, a.quarter)}</div><div><div class="t">${esc(a.title)}</div><div class="d"><span class="kind-tag">${KIND_LABEL[a.kind] || ''}</span> ${ptsLabel(a.points)}${a.capital ? `, +${a.capital} de capital` : ''}</div></div></div>`).join('')}</div>` : '<div class="chart-empty">Todavía nada.</div>'}
       </div>
-      <div class="card"><div class="card-h"><h3>Noticias</h3></div>${newsList(st.news)}</div>
-    </div>`;
+      <div class="card"><div class="card-h"><h3>Noticias</h3></div>${newsList(news)}</div>
+    </div>
+    ${toggle}
+    ${socialSection()}`;
   }
+
+  // ── En las redes ────────────────────────────────────────────
+  const ICON = {
+    reply: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+    repost: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3M18 7v6M6 17v-6"/></svg>',
+    like: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
+  };
+  const compact = (n) => (n >= 1e6 ? nf(n / 1e6, 1) + ' M' : n >= 1e4 ? nf(n / 1e3, 0) + ' mil' : n >= 1000 ? nf(n / 1e3, 1) + ' mil' : String(n));
+  const initials = (name) => name.split(/\s+/).filter((w) => !/^(de|la|del|el)$/i.test(w)).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const richText = (t) => esc(t).replace(/\n/g, '<br>').replace(/(^|[\s(])([#@][\wÁÉÍÓÚÜÑáéíóúüñ]+)/g, '$1<span class="sp-tag">$2</span>');
+  function avatar(a) {
+    return `<span class="sp-av ${a.kind === 'media' || a.kind === 'bot' ? 'sq' : ''}" style="background:${a.color}" aria-hidden="true">${a.kind === 'bot' ? '⚙' : esc(initials(a.name))}</span>`;
+  }
+  function postHtml(p, reply) {
+    const a = p.a;
+    const badge = a.verified ? '<span class="sp-ok" title="Cuenta verificada">✓</span>' : '';
+    const party = a.party ? `<span class="sp-party" style="color:${a.color}">${esc(a.party)}</span>` : '';
+    return `<article class="sp${reply ? ' sp-reply' : ''}">
+      ${avatar(a)}
+      <div class="sp-body">
+        <div class="sp-head"><b class="sp-name">${esc(a.name)}</b>${badge}${party}<span class="sp-handle">@${esc(a.handle)}</span>${reply ? '' : `<span class="sp-ago">· ${esc(p.ago)}</span>`}</div>
+        ${a.bio && !reply ? `<div class="sp-bio">${esc(a.bio)}</div>` : ''}
+        <div class="sp-text">${richText(p.text)}</div>
+        ${reply ? '' : `<div class="sp-acts"><span title="Respuestas">${ICON.reply}${compact(p.replies)}</span><span title="Compartidos">${ICON.repost}${compact(p.reposts)}</span><span title="Me gusta">${ICON.like}${compact(p.likes)}</span></div>`}
+        ${p.reply ? postHtml(p.reply, true) : ''}
+      </div>
+    </article>`;
+  }
+  function socialSection() {
+    const posts = st.social || [];
+    if (!posts.length) return '';
+    const turns = [...new Set(posts.map((p) => p.turn))];
+    const shown = ui.socialAll ? turns : turns.slice(0, 2);
+    const blocks = shown.map((t) => {
+      const list = posts.filter((p) => p.turn === t);
+      return `<div class="sp-q">${dateLabel(list[0].year, list[0].quarter)}</div>${list.map((p) => postHtml(p)).join('')}`;
+    }).join('');
+    const more = turns.length > shown.length ? '<button class="btn sm ghost sp-more" data-action="social-more">Ver trimestres anteriores</button>' : '';
+    const tr = window.Social.trends(st, S, M);
+    return `<div class="section-title"><h2>En las redes</h2></div>
+      <div class="social">
+        <div class="card sp-feed">${blocks}${more}</div>
+        <aside class="card sp-trends"><div class="card-h"><h3>Tendencias en España</h3></div>
+          ${tr.map((x, i) => `<div class="sp-tr"><span class="faint small">${i + 1} · ${esc(x.note)}</span><b>${esc(x.tag)}</b></div>`).join('')}
+          <div class="faint small sp-note">Cuentas, medios y políticos inventados.</div>
+        </aside>
+      </div>`;
+  }
+
 
   // Anuncio tipo portada para los logros
   function herald(list) {
@@ -1179,6 +1247,7 @@
     useScenario(cfg.preset || 'reality', Math.floor(Math.random() * 2 ** 31), cfg.posLr || cfg.posCen ? { lr: cfg.posLr || null, cen: cfg.posCen || null } : null);
     st = E.newGame(S, { partyName: cfg.name || S.playerDefaults.name, partyShort: (cfg.short || 'TÚ').toUpperCase(), color: cfg.color, leader: cfg.leader || 'El presidente', difficulty: cfg.difficulty });
     applyAccent(st.player.color);
+    window.Social.update(st, S, M, {}, { opening: true });
     ui.tab = 'overview'; ui.drawer = null; ui.draft = null;
     save();
     $('#app').hidden = false;
@@ -1190,6 +1259,7 @@
     useScenario(saved.presetId || 'reality', saved.presetSeed || 0, saved.presetPos || null);
     st = E.restore(S, saved);
     st.pendingInvestiture = false;
+    if (!st.social) window.Social.update(st, S, M, {}, {});
     applyAccent(st.player.color);
     $('#modal-root').innerHTML = '';
     $('#app').hidden = false;
@@ -1213,6 +1283,7 @@
     const btn = $('#btn-next');
     btn.disabled = true;
     const rep = E.step(st, S);
+    window.Social.update(st, S, M, rep);
     ui.draft = null;
     save();
     render();
@@ -1246,6 +1317,8 @@
       case 'nav-back': navGo(-1); break;
       case 'nav-fwd': navGo(1); break;
       case 'map-mode': MAP.mode = t.dataset.m; renderView(); break;
+      case 'social-more': ui.socialAll = true; renderView(); break;
+      case 'news-all': ui.newsAll = t.dataset.v === '1'; renderView(); break;
       case 'cfg-preset': ui.startCfg.preset = t.dataset.p; syncPartyDefaults(); ui.redrawStart(); break;
       case 'cfg-pos': ui.startCfg[t.dataset.axis] = ui.startCfg[t.dataset.axis] === t.dataset.v ? '' : t.dataset.v; syncPartyDefaults(); ui.redrawStart(); break;
       case 'next': nextTurn(); break;

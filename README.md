@@ -25,6 +25,7 @@ y abrir http://localhost:8080. La partida se guarda sola en el navegador.
 - **Campaña con promesas**: lo que prometes se convierte en el objetivo de tu mandato, y los votantes te castigan si no lo cumples.
 - **Seis escenarios**: España hoy, mayoría absoluta, la burbuja de 2006, la Gran Recesión de 2012, el procés de 2017 y una España aleatoria. Puedes elegir la ideología y el modelo territorial de tu partido.
 - **27 sucesos y dilemas**, muchos ligados a tus políticas.
+- **En las redes**: ciudadanos, políticos de la oposición y medios comentan cada trimestre lo que haces y lo que pasa, con su gracia y su mala uva.
 
 Todos los partidos son ficticios.
 
@@ -35,6 +36,7 @@ Todos los partidos son ficticios.
 | `js/scenario-spain.js` | Todo el contenido de España: políticas, indicadores, grupos, partidos, provincias y sucesos |
 | `js/engine.js` | Simulación genérica: efectos, presupuesto, votantes, D'Hondt e investidura |
 | `js/ui.js`, `js/charts.js` | Interfaz y gráficos SVG |
+| `js/social.js` | Las publicaciones de «En las redes»: personajes, medios y plantillas |
 | `css/style.css` | Estilos (claro y oscuro) |
 
 Para crear otro país basta con copiar `scenario-spain.js` y cambiar los datos: el motor no sabe nada de España.
