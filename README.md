@@ -1,48 +1,40 @@
-# La Moncloa: a Spanish political simulator
+# La Moncloa: un simulador político de España
 
-**Play it online: [elecciones.regalitogames.com](https://elecciones.regalitogames.com)**
+**Juega en línea: [elecciones.regalitogames.com](https://elecciones.regalitogames.com)**
 
-A turn-based government simulator set in Spain. You lead a minority government: you set policy, balance the budget, keep voter groups happy and stay in power through Spain's real electoral system.
+Un juego de estrategia por turnos en el que presides el Gobierno de España. Decides las políticas, cuadras las cuentas, mantienes contentos a los votantes y a tus socios, y te juegas el cargo en unas elecciones con el sistema electoral español.
 
-## Play
+## Cómo jugar
 
-The quickest way is to double-click `index.html`. It needs no build step. Online, it also loads fonts from Google and the province map (IGN boundaries via [es-atlas](https://github.com/martgnz/es-atlas)) from jsDelivr; offline, everything else still works.
+Abre `index.html` con doble clic: no hace falta instalar nada. Con conexión, también carga las fuentes de Google y el mapa por comunidades (límites del IGN a través de [es-atlas](https://github.com/martgnz/es-atlas)); sin conexión, todo lo demás funciona igual.
 
-Or serve it locally:
+También puedes servirlo en local:
 
 ```bash
 node serve.js
 ```
 
-Then open http://localhost:8080. Your game autosaves in the browser. To load the autosave directly, open `http://localhost:8080/?continue`. The ☰ menu can download and load save files.
+y abrir http://localhost:8080. La partida se guarda sola en el navegador.
 
-## What's in it
+## Qué incluye
 
-- **84 policies** in 8 areas: taxes (IRPF, IVA, Patrimonio…), labour (SMI, the 37.5-hour week, reforma laboral), pensions, healthcare, territory (financiación singular, amnesty and dialogue, Art. 155, co-official languages), energy (nuclear phase-out, renewables, desalination), housing (rent control, tourist flats, golden visa, land reform, empty-homes tax) and society (bullfighting, Church funding, memoria democrática…).
-- **26 indicators** that affect one another with time lags: unemployment, housing costs, risk premium, drought, rural depopulation, territorial tension, birth rate and more. They can tip into 15 situations, such as a housing emergency, recession or independence crisis. Nine forces beyond your control push on top: the world economy, ECB interest rates, oil and gas prices, global tensions, migration pressure, AI and automation, the end of EU recovery funds, climate change and population ageing.
-- **22 voter groups**, simulated as about 7,500 individual voters in 52 provinces. Group sizes change: the unemployed track the jobless rate, pensioners grow as Spain ages, renters grow when housing is expensive, and so on. Regional make-up varies: Catalan and Basque nationalists, rural Spain, tourism workers in the islands, and so on.
-- **Elections like the real ones**: D'Hondt in every province with a 3% threshold, 350 seats, and an investiture vote (176 in the first round, or more yes than no in the second). There are also repeat elections and motions of no confidence.
-- **Fictional parties**: Unión Conservadora, Voz Patriótica, Izquierda Plural, Centro Cívico, and regional parties for Catalonia, the Basque Country, Galicia, the Canaries and "España Vaciada". Regional parties have demands that decide whether they back you.
-- **A realistic budget**: about €1.7tn GDP and about 102% debt. Pension costs rise as the population ages, and the interest bill grows as debt is refinanced. There's an EU deficit procedure, a debt crisis and a bailout dilemma.
-- **27 events and dilemmas**, many tied to your policies (a low border-control budget makes migrant crises likelier, an underfunded health service makes A&E collapse likelier),, including DANA floods, wildfires, the blackout, migrant boats reaching the Canaries, tractor protests, a unilateral referendum and corruption scandals.
+- **84 políticas** en 8 áreas: fiscalidad, empleo, bienestar, servicios públicos, interior y defensa, modelo territorial, medio ambiente y vivienda.
+- **26 indicadores** que se influyen entre sí con retraso (paro, coste de la vivienda, prima de riesgo, sequía, España vaciada, tensión territorial, natalidad…) y **15 situaciones** que se activan al cruzar umbrales. Encima actúan fuerzas que no controlas: la economía mundial, los tipos del BCE, el petróleo, la tensión geopolítica, la presión migratoria, la automatización, los fondos europeos, el cambio climático y el envejecimiento.
+- **22 grupos de votantes** simulados con unos 7.500 electores en 52 provincias. Los grupos crecen y menguan con el país.
+- **Elecciones como las reales**: D'Hondt en cada provincia, umbral del 3 %, 350 escaños, investidura, repetición electoral y moción de censura.
+- **Campaña con promesas**: lo que prometes se convierte en el objetivo de tu mandato, y los votantes te castigan si no lo cumples.
+- **Seis escenarios**: España hoy, mayoría absoluta, la burbuja de 2006, la Gran Recesión de 2012, el procés de 2017 y una España aleatoria. Puedes elegir la ideología y el modelo territorial de tu partido.
+- **27 sucesos y dilemas**, muchos ligados a tus políticas.
 
-**Six starting scenarios**: Spain today (2027), an absolute majority, the 2006 housing bubble, the 2012 Great Recession, the 2017 Catalan crisis, or a randomly generated Spain. In the reality scenario the parliament is calibrated to resemble the 2023 Congress.
+Todos los partidos son ficticios.
 
-**Tax revenue follows the economy**: income tax and social security contributions follow the wage bill (people in work × average pay), VAT follows consumer and tourist spending, and corporate tax follows profits. Income tax is progressive, so it grows faster than wages. Raising taxes costs 2.5× the usual political capital.
+## Estructura
 
-## Project layout
-
-| File | Purpose |
+| Archivo | Contenido |
 |---|---|
-| `js/scenario-spain.js` | **All Spain-specific content**: policies, indicators, voter groups, parties, provinces, events |
-| `js/engine.js` | Generic simulation: effects network, budget, voters, D'Hondt, investiture |
-| `js/ui.js`, `js/charts.js` | Interface and SVG charts |
-| `css/style.css` | Styles (light and dark) |
+| `js/scenario-spain.js` | Todo el contenido de España: políticas, indicadores, grupos, partidos, provincias y sucesos |
+| `js/engine.js` | Simulación genérica: efectos, presupuesto, votantes, D'Hondt e investidura |
+| `js/ui.js`, `js/charts.js` | Interfaz y gráficos SVG |
+| `css/style.css` | Estilos (claro y oscuro) |
 
-## Adding another country
-
-Copy `scenario-spain.js` and change the data. The engine knows nothing about Spain.
-
-Effects are written as strings like `'unemployment -0.04, workers 0.2, growth 0.03 sqrt'`. At game start the engine calibrates baselines so that the opening state is an equilibrium. Effects therefore describe how *changes* ripple through the country, and you don't need to hand-tune starting values.
-
-For party vote shares, give each party a `target` share. The engine fits each party's popularity so that the opening poll matches.
+Para crear otro país basta con copiar `scenario-spain.js` y cambiar los datos: el motor no sabe nada de España.

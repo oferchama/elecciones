@@ -219,7 +219,7 @@
 
   // ── Group sizes ─────────────────────────────────────────────
   function sizeSourceValue(st, S, id) {
-    if (id === 'time') return { cur: st.turn / 40, ref: 0, name: 'Long-term social trends', kind: 'time' };
+    if (id === 'time') return { cur: st.turn / 40, ref: 0, name: 'Tendencias sociales de fondo', kind: 'time' };
     if (S.sims[id]) return { cur: st.sims[id], ref: S.sims[id].init, name: S.sims[id].name, kind: 'sim' };
     const p = model(S).policyById[id];
     return { cur: polVal(st, id), ref: p.init == null ? 0 : p.init, name: p.name, kind: 'policy' };
@@ -263,8 +263,6 @@
     parties[0].lr = pos.lr; parties[0].cen = pos.cen;
     const bias = opts.bias || st.partyBias;
     const stands = S.provinces.map((prov) => parties.map((p) => partyStands(S, p, prov)));
-    const tour = st.campaign && st.campaign.tour ? st.campaign.tour : [];
-    const provBoost = S.provinces.map((prov) => (tour.includes(prov.region) ? TOUR_BOOST : 0));
     const nG = M.groupIds.length;
     const mult = groupMults(st, S);
     const gh = M.groupIds.map((g) => st.groupHappy[g]);
@@ -301,7 +299,7 @@
         const dl = lr - pk.lr, dc = cen - pk.cen;
         const ideo = -B_IDEO * (dl * dl + CEN_W * dc * dc);
         let U = ideo + (bias[pk.id] || 0) + V.noise[i * P + k];
-        if (k === 0) { U += perf + provBoost[pi]; U0 = U; ideoP = ideo; }
+        if (k === 0) { U += perf; U0 = U; ideoP = ideo; }
         if (U > bestU) { second = bestU; bestU = U; best = k; ideoBest = ideo; } else if (U > second) second = U;
       }
       choice[i] = best;
@@ -380,20 +378,17 @@
     const lrPen = pr.lrW * Math.abs(pos.lr - party.lr), cenPen = pr.cenW * Math.abs(pos.cen - party.cen);
     let score = 1 + (pr.aff || 0) - lrPen - cenPen;
     const reasons = [];
-    if (lrPen > 0.3) reasons.push({ ok: false, text: `You are too far ${pos.lr < party.lr ? 'left' : 'right'} for them` });
-    else if (lrPen < 0.15) reasons.push({ ok: true, text: 'Close to you on left–right' });
-    if (cenPen > 0.25) reasons.push({ ok: false, text: `You are too ${pos.cen > party.cen ? 'centralist' : 'pro-devolution'} for them` });
-    if ((pr.aff || 0) <= -0.3) reasons.push({ ok: false, text: 'Deeply hostile to your party' });
+    if (lrPen > 0.3) reasons.push({ ok: false, text: `Te ven demasiado a la ${pos.lr < party.lr ? 'izquierda' : 'derecha'}` });
+    else if (lrPen < 0.15) reasons.push({ ok: true, text: 'Cercanos a ti ideológicamente' });
+    if (cenPen > 0.25) reasons.push({ ok: false, text: `Te ven demasiado ${pos.cen > party.cen ? 'centralista' : 'autonomista'}` });
+    if ((pr.aff || 0) <= -0.3) reasons.push({ ok: false, text: 'Profundamente hostiles a tu partido' });
     (pr.demands || []).forEach(([pid, thr, bonus]) => {
       const v = polVal(st, pid);
       const pol = model(S).policyById[pid];
-      if (bonus > 0 && v >= thr) { score += bonus; reasons.push({ ok: true, text: `${pol.name} at "${levelLabel(pol, thr)}" or more` }); }
-      else if (bonus > 0) reasons.push({ ok: false, text: `Wants ${pol.name} at "${levelLabel(pol, thr)}" or more` });
-      if (bonus < 0 && v > thr) { score += bonus; reasons.push({ ok: false, text: `Opposes ${pol.name}` }); }
+      if (bonus > 0 && v >= thr) { score += bonus; reasons.push({ ok: true, text: `${pol.name}: «${levelLabel(pol, thr)}» o más` }); }
+      else if (bonus > 0) reasons.push({ ok: false, text: `Exige ${pol.name}: «${levelLabel(pol, thr)}» o más` });
+      if (bonus < 0 && v > thr) { score += bonus; reasons.push({ ok: false, text: `Rechaza: ${pol.name}` }); }
     });
-    const pact = (st.pacts || {})[party.id];
-    if (pact && pact.active && pactMet(st, pact)) { score = Math.max(score, 0.75); reasons.unshift({ ok: true, text: 'Bound by a pact with you' }); }
-    if (pact && pact.broken) { score -= 0.6; reasons.unshift({ ok: false, text: 'You broke your pact with them' }); }
     const vote = score >= 0.5 ? 'yes' : score >= 0.2 ? 'abstain' : 'no';
     return { score, vote, reasons };
   }
@@ -433,7 +428,7 @@
   // ── Labels ──────────────────────────────────────────────────
   function levelLabel(p, v) {
     if (p.fmtLevel) return p.fmtLevel(v);
-    const L = p.levels || ['Very low', 'Low', 'Moderate', 'High', 'Very high'];
+    const L = p.levels || ['Muy bajo', 'Bajo', 'Moderado', 'Alto', 'Muy alto'];
     return L[Math.min(L.length - 1, Math.floor(v * L.length * 0.9999))];
   }
 
@@ -466,14 +461,14 @@
     return macroParams(S)._fx.map((e) => { const v = sizeSourceValue(st, S, e.t); return { id: e.t, kind: v.kind, name: v.name, amount: e.a, contribution: e.a * (v.cur - v.ref) }; });
   }
   const TAX_BASES = {
-    wages: { name: 'Wage bill', desc: 'Total wages paid: workers employed × average wage' },
-    wagesProg: { name: 'Wage bill (progressive)', desc: 'Income tax is progressive: as wages rise people move into higher brackets, so revenue grows faster than wages' },
-    consumption: { name: 'Household & tourist spending', desc: 'What residents and tourists spend' },
-    profits: { name: 'Business surplus', desc: 'Gross operating surplus of companies. Profits swing strongly with the business cycle' },
-    tourism: { name: 'Tourist nights', desc: 'Number of tourist stays' },
-    gdp: { name: 'Nominal GDP', desc: 'Grows with real growth plus inflation' },
-    ageing: { name: 'Number of pensioners × nominal GDP', desc: 'More retirees every year, and pensions rise with prices' },
-    unemp: { name: 'Number of unemployed', desc: 'Rises and falls with unemployment' },
+    wages: { name: 'Masa salarial', desc: 'Total de salarios pagados' },
+    wagesProg: { name: 'Masa salarial (progresiva)', desc: 'Salarios, con tramos progresivos' },
+    consumption: { name: 'Consumo', desc: 'Gasto de hogares y turistas' },
+    profits: { name: 'Excedente empresarial', desc: 'Beneficios de las empresas' },
+    tourism: { name: 'Pernoctaciones', desc: 'Estancias turísticas' },
+    gdp: { name: 'PIB nominal', desc: 'Crecimiento más inflación' },
+    ageing: { name: 'Pensionistas', desc: 'Número de jubilados' },
+    unemp: { name: 'Parados', desc: 'Número de desempleados' },
   };
 
   // ── Budget ──────────────────────────────────────────────────
@@ -522,9 +517,9 @@
     const otherRev = st.calib.otherRev * gf;
     const otherSpend = st.calib.otherSpend * gf;
     const interest = st.debt * st.effRate;
-    rev.push({ id: '_other', name: 'Other revenue (local taxes, fees, EU)', v: otherRev }); R += otherRev;
-    spend.push({ id: '_other', name: 'General administration & other', v: otherSpend }); X += otherSpend;
-    spend.push({ id: '_interest', name: 'Interest on debt', v: interest }); X += interest;
+    rev.push({ id: '_other', name: 'Otros ingresos (tributos locales, tasas, UE)', v: otherRev }); R += otherRev;
+    spend.push({ id: '_other', name: 'Administración general y otros', v: otherSpend }); X += otherSpend;
+    spend.push({ id: '_interest', name: 'Intereses de la deuda', v: interest }); X += interest;
     rev.sort((a, b) => b.v - a.v); spend.sort((a, b) => b.v - a.v);
     return { revenue: R, spending: X, deficit: X - R, rev, spend, interest, macro: mac };
   }
@@ -622,7 +617,7 @@
     st.groupsWon = {};
     Object.keys(v.groupStats).forEach((g) => (st.groupsWon[g] = v.groupStats[g].player >= GROUP_WON));
     st.leading = isLeading(v.shares);
-    addNews(st, 'info', `${st.player.leader} is sworn in as President of the Government`, `After a close general election, ${st.player.name} formed a minority government with the support of smaller parties. The next election is due in ${S.startYear + 4}.`);
+    addNews(st, 'info', `${st.player.leader} toma posesión como presidente del Gobierno`, `Tras unas elecciones ajustadas, ${st.player.name} forma un gobierno en minoría con el apoyo de partidos pequeños. Las próximas generales serán en ${S.startYear + 4}.`);
     return st;
   }
 
@@ -678,7 +673,7 @@
     Object.keys(vote.shares).forEach((k) => (poll[k] = Math.max(0, vote.shares[k] + gauss(r) * 0.006 * Math.sqrt(vote.shares[k] * 10))));
     const pt = Object.values(poll).reduce((a, b) => a + b, 0);
     Object.keys(poll).forEach((k) => (poll[k] = +(poll[k] / pt).toFixed(4)));
-    st.history.polls.push({ turn: st.turn, label: `Q${st.quarter} ${st.year}`, shares: poll, seats });
+    st.history.polls.push({ turn: st.turn, label: `T${st.quarter} ${st.year}`, shares: poll, seats });
     st.history.approval.push(+vote.approval.toFixed(4));
     const b = st.lastBudget;
     const mac = b.macro || computeMacro(st, S);
@@ -708,9 +703,9 @@
     return !p.availableFrom || st.year >= p.availableFrom;
   }
   function applyPolicy(st, S, id, active, v) {
-    if (active && !st.policies[id].active && !policyAvailable(st, S, id)) return { ok: false, cost: 0, reason: 'Not available yet' };
+    if (active && !st.policies[id].active && !policyAvailable(st, S, id)) return { ok: false, cost: 0, reason: 'Todavía no es posible' };
     const cost = changeCost(st, S, id, active, v);
-    if (cost > st.capital) return { ok: false, cost, reason: 'Not enough political capital' };
+    if (cost > st.capital) return { ok: false, cost, reason: 'No tienes suficiente capital político' };
     const p = model(S).policyById[id];
     const cur = st.policies[id];
     const was = cur.active;
@@ -724,8 +719,8 @@
     st.capital -= cost;
     st.changedThisTurn = st.changedThisTurn || [];
     st.changedThisTurn.push(id);
-    const verb = !was && active ? 'introduced' : was && !active ? 'abolished' : 'changed';
-    addNews(st, 'policy', `${p.name} ${verb}`, active ? `${p.name} (${p.local}) set to “${levelLabel(p, cur.v)}”.` : `${p.name} (${p.local}) has been scrapped.`);
+    const verb = !was && active ? 'aprobada' : was && !active ? 'derogada' : 'modificada';
+    addNews(st, 'policy', `${p.name}: ${verb}`, active ? `Nuevo nivel: «${levelLabel(p, cur.v)}».` : `${p.name} queda derogada.`);
     return { ok: true, cost };
   }
 
@@ -733,7 +728,7 @@
   function step(st, S) {
     const M = model(S);
     if (st.gameOver) return { events: [], situations: [], achievements: [], unlocked: [] };
-    if (st.pendingInvestiture) autoNegotiate(st, S);
+    st.pendingInvestiture = false;
     if (st.pendingCampaign) launchCampaign(st, S, {});
     const report = { events: [], situations: [], election: null, achievements: [], unlocked: [] };
     st.changedThisTurn = [];
@@ -783,7 +778,7 @@
       if (now !== was) {
         st.situations[s.id] = now;
         report.situations.push({ id: s.id, on: now });
-        addNews(st, s.bad ? (now ? 'bad' : 'good') : (now ? 'good' : 'bad'), now ? `${s.name} begins` : `${s.name} is over`, now ? s.desc : `${s.name} (${s.local}) has ended.`);
+        addNews(st, s.bad ? (now ? 'bad' : 'good') : (now ? 'good' : 'bad'), now ? `Comienza: ${s.name}` : `Fin de: ${s.name}`, now ? s.desc : `${s.name}: la situación ha terminado.`);
       }
     });
 
@@ -824,7 +819,7 @@
       S.policies.forEach((p) => {
         if (p.availableFrom === st.year) {
           report.unlocked.push(p.id);
-          addNews(st, 'info', `New option: ${p.name}`, `${p.name} (${p.local}) is now possible.`);
+          addNews(st, 'info', `Nueva opción: ${p.name}`, `${p.name} ya es posible.`);
         }
       });
     }
@@ -845,11 +840,11 @@
         const alt = alternativeGovernment(st, S, st.seats);
         const lead = v.shares[alt.leader] > v.shares.player;
         if (alt.success && lead && r() < 0.35) {
-          st.gameOver = { reason: 'censure', title: 'Motion of no confidence', text: `${partyName(S, alt.leader)} tabled a constructive motion of no confidence and won ${alt.yes} votes. You are out of La Moncloa.` };
-          addNews(st, 'bad', 'Government falls in a motion of no confidence', st.gameOver.text);
+          st.gameOver = { reason: 'censure', title: 'Moción de censura', text: `${partyName(S, alt.leader)} presenta una moción de censura y la gana con ${alt.yes} votos. Sales de La Moncloa.` };
+          addNews(st, 'bad', 'El Gobierno cae en una moción de censura', st.gameOver.text);
         } else if (inv.no >= S.majority && !st.censureWarned) {
           st.censureWarned = true;
-          addNews(st, 'bad', 'Opposition sounds out a motion of no confidence', `Parties opposed to your government hold ${inv.no} seats, enough to topple you if they agree on an alternative candidate.`);
+          addNews(st, 'bad', 'La oposición tantea una moción de censura', `Los partidos contrarios a tu gobierno suman ${inv.no} escaños: bastan para derribarte si se ponen de acuerdo en un candidato.`);
         }
       } else st.censureWarned = false;
     }
@@ -873,7 +868,7 @@
   }
 
   function partyName(S, id) {
-    if (id === 'player') return 'Your party';
+    if (id === 'player') return 'Tu partido';
     const p = S.parties.find((x) => x.id === id);
     return p ? p.name : id;
   }
@@ -918,7 +913,7 @@
           report.events.push({ id: e.id, dilemma: true, why });
         } else {
           applyEventFx(st, S, e);
-          addNews(st, 'event', e.title, e.text + (why.length ? ' Why: ' + why.join('; ') + '.' : ''));
+          addNews(st, 'event', e.title, e.text + (why.length ? ' Factores: ' + why.join('; ') + '.' : ''));
           report.events.push({ id: e.id, dilemma: false, why });
         }
         break;
@@ -945,7 +940,7 @@
     if (!e) return;
     const c = e.choices[idx];
     applyEventFx(st, S, Object.assign({ turns: c.turns || 6 }, c, { id: e.id }));
-    addNews(st, 'event', e.title, `${e.text} Decision: ${c.label}.`);
+    addNews(st, 'event', e.title, `${e.text} Decisión: ${c.label}.`);
     st.pendingDilemma = null;
     // refresh polls so the UI reflects the choice
     const v = runVote(st, S);
@@ -960,7 +955,6 @@
     Object.keys(v.shares).forEach(() => {});
     const res = seatsFrom(S, v, r);
     st.seats = res.seats;
-    st.pacts = {}; // a new parliament: old pacts lapse
     const inv = investiture(st, S, res.seats);
     const result = { turn: st.turn, year: st.year, quarter: st.quarter, shares: v.shares, turnout: v.turnout, seats: res.seats, byProvSeats: res.byProvSeats, invest: inv,
       prevSeats: Object.assign({}, st.lastElection ? st.lastElection.seats : {}), analysis: electionAnalysis(st, S, v) };
@@ -970,11 +964,6 @@
     st.history.elections = st.history.elections || [];
     st.history.elections.push({ year: st.year, shares: v.shares, seats: res.seats });
     result.promises = st.campaign ? st.campaign.promises : [];
-    if ((res.seats.player || 0) < S.majority) {
-      result.outcome = 'negotiating';
-      st.pendingInvestiture = true;
-      return result;
-    }
     return concludeInvestiture(st, S, result, inv);
   }
 
@@ -989,23 +978,23 @@
       st.nextElectionTurn = st.turn + S.termLength;
       st.fatigue *= 0.6;
       st.capital += 10;
-      addNews(st, 'good', `Re-elected! ${st.player.name} wins ${res.seats.player} seats`, `Investiture passed in the ${inv.round === 1 ? 'first round with an absolute majority' : 'second round by simple majority'} (${inv.yes} yes, ${inv.no} no, ${inv.abstain} abstentions).`);
+      addNews(st, 'good', `${st.player.name} gana: ${res.seats.player} escaños`, `Investidura aprobada en ${inv.round === 1 ? 'primera votación por mayoría absoluta' : 'segunda votación por mayoría simple'} (${inv.yes} sí, ${inv.no} no, ${inv.abstain} abstenciones).`);
       result.outcome = 'won';
     } else {
       const alt = alternativeGovernment(st, S, res.seats);
       if (alt.success) {
-        st.gameOver = { reason: 'election', title: 'Defeated at the ballot box', text: `${partyName(S, alt.leader)} forms a government with ${alt.yes} seats. Your time in La Moncloa is over.` };
+        st.gameOver = { reason: 'election', title: 'Derrota en las urnas', text: `${partyName(S, alt.leader)} forma gobierno con ${alt.yes} escaños. Tu etapa en La Moncloa ha terminado.` };
         result.outcome = 'lost';
-        addNews(st, 'bad', 'Election lost', st.gameOver.text);
+        addNews(st, 'bad', 'Elecciones perdidas', st.gameOver.text);
       } else if (!st.repeatElection) {
         st.repeatElection = true;
         st.nextElectionTurn = st.turn + 2;
         result.outcome = 'hung';
-        addNews(st, 'bad', 'Hung parliament: repeat election called', `Your investiture failed (${inv.yes} yes vs ${inv.no} no) and no alternative majority exists. You stay on as caretaker; Spain votes again in six months.`);
+        addNews(st, 'bad', 'Bloqueo: repetición electoral', `Tu investidura fracasa (${inv.yes} sí frente a ${inv.no} no) y no hay mayoría alternativa. Sigues en funciones; España vuelve a votar en seis meses.`);
       } else {
-        st.gameOver = { reason: 'deadlock', title: 'Deadlock', text: 'A second failed investiture. Your party replaces you with a new candidate to break the deadlock.' };
+        st.gameOver = { reason: 'deadlock', title: 'Bloqueo', text: 'Segunda investidura fallida. Tu partido te sustituye por otro candidato para desbloquear la situación.' };
         result.outcome = 'lost';
-        addNews(st, 'bad', 'Forced out after second failed investiture', st.gameOver.text);
+        addNews(st, 'bad', 'Relevado tras dos investiduras fallidas', st.gameOver.text);
       }
     }
     if (result.outcome === 'won') {
@@ -1018,7 +1007,6 @@
     return result;
   }
 
-  // ── Coalition negotiation ───────────────────────────────────
   function demandMet(st, d) {
     const [pid, target, dir] = d;
     const v = polVal(st, pid);
@@ -1026,68 +1014,13 @@
     if (dir === 'max') return v <= target + 1e-6;
     return v >= target - 1e-6;
   }
-  function pactMet(st, pact) { return pact.demands.every((d) => demandMet(st, d)); }
-  function partyDemands(st, S, party) {
-    const out = [];
-    (party.partner && party.partner.demands || []).forEach(([pid, thr, bonus]) => { if (bonus > 0) out.push([pid, thr, 'min']); });
-    ((S.partyAsks || {})[party.id] || []).forEach((d) => out.push(d.slice()));
-    return out.filter((d) => model(S).policyById[d[0]]).filter((d) => !demandMet(st, d)).slice(0, 3);
-  }
-  function describeDemand(S, d) {
-    const p = model(S).policyById[d[0]];
-    if (d[2] === 'off') return `Scrap ${p.name}`;
-    return `${p.name}: ${d[2] === 'max' ? 'no more than' : 'at least'} “${levelLabel(p, d[1])}”`;
-  }
-  function negotiationOptions(st, S) {
-    return S.parties.filter((p) => (st.seats[p.id] || 0) > 0).map((p) => {
-      const stance = partyStance(st, S, p);
-      const pact = (st.pacts || {})[p.id];
-      const demands = partyDemands(st, S, p);
-      let status;
-      if (pact && pact.active) status = 'pact';
-      else if (stance.vote === 'yes') status = 'yes';
-      else if (stance.score < -0.15 || !demands.length) status = stance.vote === 'abstain' ? 'abstain' : 'refuses';
-      else status = 'open';
-      return { id: p.id, seats: st.seats[p.id], vote: stance.vote, score: stance.score, status, demands, text: demands.map((d) => describeDemand(S, d)) };
-    }).sort((a, b) => b.seats - a.seats);
-  }
-  function acceptDeal(st, S, partyId) {
-    const party = S.parties.find((p) => p.id === partyId);
-    const demands = partyDemands(st, S, party);
-    demands.forEach(([pid, target, dir]) => {
-      const ps = st.policies[pid];
-      if (dir === 'off') { ps.active = false; return; }
-      if (!ps.active) { ps.active = true; ps.v = dir === 'max' ? Math.min(target, 0.5) : target; return; }
-      ps.v = dir === 'max' ? Math.min(ps.v, target) : Math.max(ps.v, target);
-    });
-    st.pacts = st.pacts || {};
-    st.pacts[partyId] = { demands, since: st.turn, active: true };
-    addNews(st, 'info', `Pact with ${party.name}`, `In exchange for their support: ${demands.map((d) => describeDemand(S, d)).join('; ')}.`);
-    return { ok: true, demands };
-  }
-  function holdInvestiture(st, S) {
-    const result = st.lastElection;
-    const inv = investiture(st, S, st.seats);
-    const report = { achievements: [] };
-    concludeInvestiture(st, S, result, inv);
-    if (result.outcome === 'won') winRewards(st, S, report, result);
-    return { result, achievements: report.achievements };
-  }
-  function autoNegotiate(st, S) {
-    negotiationOptions(st, S).filter((o) => o.status === 'open').forEach((o) => {
-      const inv = investiture(st, S, st.seats);
-      if (inv.yes < S.majority) acceptDeal(st, S, o.id);
-    });
-    return holdInvestiture(st, S);
-  }
   function winRewards(st, S, report, result) {
     (st.goals || []).forEach((g) => { if (g.win && !(st.goalsDone || {})[g.id]) completeGoal(st, report, g); });
     const maj = result.seats.player >= S.majority;
-    award(st, report, 'win-' + st.turn, maj ? 'Absolute majority' : 'Re-elected', maj ? `${st.player.name} wins ${result.seats.player} seats and can govern alone.` : `${st.player.name} wins ${result.seats.player} seats and keeps La Moncloa.`, maj ? 40 : 25, 0, 'win');
+    award(st, report, 'win-' + st.turn, maj ? 'Mayoría absoluta' : 'Reelegido', maj ? `${st.player.name} logra ${result.seats.player} escaños y gobernará en solitario.` : `${st.player.name} logra ${result.seats.player} escaños y sigue en La Moncloa.`, maj ? 40 : 25, 0, 'win');
   }
 
   // ── Election campaign & promises ────────────────────────────
-  const TOUR_BOOST = 0.22;
   function promiseCheck(st, S, p) {
     const c = { deficit: st.lastBudget.deficit / st.gdp };
     if (p.type === 'sim') { const v = st.sims[p.sim]; return { met: p.below != null ? v < p.below : v > p.above, now: S.sims[p.sim].fmt(v), target: S.sims[p.sim].fmt(p.below != null ? p.below : p.above) }; }
@@ -1109,53 +1042,46 @@
     // The term is ending: settle the promises made last time
     (st.promises || []).forEach((p) => {
       if (p.status !== 'open') return;
-      if (p.keep) keepPromise(st, S, p, report); else breakPromise(st, S, p, report, 'You did not deliver it before the end of the term.');
+      if (p.keep) keepPromise(st, S, p, report); else breakPromise(st, S, p, report, 'No la cumpliste antes del final de la legislatura.');
     });
   }
   function launchCampaign(st, S, plan) {
     const opts = campaignOptions(st, S);
     const chosen = (plan.promises || []).map((id) => opts.find((o) => o.id === id)).filter(Boolean).slice(0, 3);
-    const tour = (plan.tour || []).filter((r) => S.regions[r]).slice(0, 2);
     const left = Math.max(1, st.nextElectionTurn - st.turn);
     const cred = st.brokenPromises ? Math.max(0.4, 1 - 0.2 * st.brokenPromises) : 1;
     chosen.forEach((p) => parseFx(p.groups).forEach((f) => st.modifiers.push({ t: f.t, a: f.a * cred, turns: left + 4, left: left + 4, src: 'campaign', label: p.title })));
-    st.campaign = { turn: st.turn, promises: chosen, tour, credibility: cred };
+    st.campaign = { turn: st.turn, promises: chosen, credibility: cred };
     st.pendingCampaign = false;
-    addNews(st, 'info', 'The campaign begins', chosen.length ? `${st.player.name} promises: ${chosen.map((p) => p.title.toLowerCase()).join('; ')}.` : `${st.player.name} runs on its record.`);
+    addNews(st, 'info', 'Arranca la campaña', chosen.length ? `${st.player.name} promete: ${chosen.map((p) => p.title.charAt(0).toLowerCase() + p.title.slice(1)).join('; ')}.` : `${st.player.name} se presenta con su gestión.`);
     return st.campaign;
   }
   function keepPromise(st, S, p, report) {
     p.status = 'kept'; p.settledTurn = st.turn;
     parseFx(p.groups).forEach((f) => { if (f.a > 0) st.modifiers.push({ t: f.t, a: f.a * 0.6, turns: 6, left: 6, src: 'promise', label: p.title }); });
-    award(st, report, 'promise-' + p.id + '-' + st.turn, 'Promise kept: ' + p.title, 'Voters notice when you deliver.', 15, 4, 'goal');
+    award(st, report, 'promise-' + p.id + '-' + st.turn, 'Promesa cumplida: ' + p.title, 'Los votantes lo tienen en cuenta.', 15, 4, 'goal');
   }
   function breakPromise(st, S, p, report, why) {
     p.status = 'broken'; p.settledTurn = st.turn;
     st.brokenPromises = (st.brokenPromises || 0) + 1;
-    parseFx(p.groups).forEach((f) => { if (f.a > 0) st.modifiers.push({ t: f.t, a: -f.a * 1.5, turns: 10, left: 10, src: 'promise', label: 'Broken: ' + p.title }); });
+    parseFx(p.groups).forEach((f) => { if (f.a > 0) st.modifiers.push({ t: f.t, a: -f.a * 1.5, turns: 10, left: 10, src: 'promise', label: 'Incumplida: ' + p.title }); });
     st.fatigue += 0.03;
-    award(st, report, 'broken-' + p.id + '-' + st.turn, 'Broken promise: ' + p.title, why, -10, 0, 'broken');
+    award(st, report, 'broken-' + p.id + '-' + st.turn, 'Promesa incumplida: ' + p.title, why, -10, 0, 'broken');
   }
   function checkPromisesAndPacts(st, S, report) {
     (st.promises || []).forEach((p) => {
       if (p.status !== 'open') return;
       const met = promiseCheck(st, S, p).met;
-      if (p.keep && !met) breakPromise(st, S, p, report, 'You went back on your word.');
+      if (p.keep && !met) breakPromise(st, S, p, report, 'Has faltado a tu palabra.');
       else if (!p.keep && met) keepPromise(st, S, p, report);
-    });
-    Object.entries(st.pacts || {}).forEach(([id, pact]) => {
-      if (!pact.active || pactMet(st, pact)) return;
-      pact.active = false; pact.broken = true;
-      const party = S.parties.find((p) => p.id === id);
-      award(st, report, 'pact-' + id + '-' + st.turn, `${party.name} breaks with you`, 'You went back on the pact that made you President.', -10, 0, 'broken');
     });
   }
 
   function callSnapElection(st, S) {
-    if (st.turn - st.lastElectionTurn < 4) return { ok: false, reason: 'You must wait at least one year after an election.' };
+    if (st.turn - st.lastElectionTurn < 4) return { ok: false, reason: 'Debe pasar al menos un año desde las últimas elecciones.' };
     st.nextElectionTurn = st.turn + 1;
     if (!st.campaign) openCampaign(st, S, { achievements: [] });
-    addNews(st, 'info', 'Snap election called', `${st.player.leader} dissolves the Cortes Generales. Spain goes to the polls next quarter.`);
+    addNews(st, 'info', 'Elecciones anticipadas', `${st.player.leader} disuelve las Cortes Generales. España vota el próximo trimestre.`);
     return { ok: true };
   }
 
@@ -1193,7 +1119,7 @@
   }
   function completeGoal(st, report, g) {
     st.goalsDone[g.id] = { turn: st.turn, year: st.year, quarter: st.quarter };
-    award(st, report, 'goal-' + g.id, 'Goal reached: ' + g.title, 'One of the promises of your mandate is fulfilled.', 20, 8, 'goal');
+    award(st, report, 'goal-' + g.id, 'Objetivo cumplido: ' + g.title, 'Cumples uno de los compromisos de tu mandato.', 20, 8, 'goal');
   }
   function checkAchievements(st, S, report) {
     const M = model(S);
@@ -1201,7 +1127,7 @@
     // Crises resolved and good times arriving
     report.situations.forEach(({ id, on }) => {
       const sit = M.situationById[id];
-      if (sit.bad && !on) award(st, report, `sit-${id}-${st.turn}`, `Crisis over: ${sit.name}`, `The ${sit.name.toLowerCase()} (${sit.local}) has ended.`, 10, 3, 'crisis');
+      if (sit.bad && !on) award(st, report, `sit-${id}-${st.turn}`, `Fin de la crisis: ${sit.name}`, 'Una crisis menos.', 10, 3, 'crisis');
       if (!sit.bad && on) award(st, report, `sit-${id}-${st.turn}`, sit.name, sit.desc, 8, 2, 'good');
     });
     // Voter groups won over
@@ -1211,12 +1137,12 @@
       if (S.groups[g].hidden || gs[g].size < 0.02) return;
       if (!st.groupsWon[g] && gs[g].player >= GROUP_WON) {
         st.groupsWon[g] = true;
-        award(st, report, `grp-${g}-${st.turn}`, `${S.groups[g].name} are with you`, `${Math.round(gs[g].player * 100)}% of ${S.groups[g].name.toLowerCase()} now plan to vote for you.`, 5, 2, 'group');
+        award(st, report, `grp-${g}-${st.turn}`, `${S.groups[g].name}: ahora te apoyan`, `El ${Math.round(gs[g].player * 100)} % piensa votarte.`, 5, 2, 'group');
       } else if (st.groupsWon[g] && gs[g].player < GROUP_LOST) st.groupsWon[g] = false;
     });
     // Leading the polls
     const lead = isLeading(st.lastVote.shares);
-    if (lead && !st.leading) award(st, report, 'lead-' + st.turn, 'You lead the polls', `${st.player.name} is now the most popular party, on ${(st.lastVote.shares.player * 100).toFixed(1)}%.`, 8, 2, 'polls');
+    if (lead && !st.leading) award(st, report, 'lead-' + st.turn, 'Primeros en las encuestas', `${st.player.name} es el partido más votado en los sondeos, con un ${(st.lastVote.shares.player * 100).toFixed(1).replace('.', ',')} %.`, 8, 2, 'polls');
     st.leading = lead;
     // Milestones
     const c = achievementCtx(st, S);
@@ -1231,16 +1157,16 @@
     if (!m0) return { total: 0, items: [] };
     const total = Math.log(mac.avgWage / m0.avgWage) * 100;
     const items = [];
-    items.push({ kind: 'sim', id: 'inflation', name: 'Inflation', c: Math.log(st.priceLevel || 1) * 100 });
+    items.push({ kind: 'sim', id: 'inflation', name: 'Inflación', c: Math.log(st.priceLevel || 1) * 100 });
     const share = {};
     labourShareDrivers(st, S).forEach((d) => (share[d.id] = Object.assign({}, d, { c: (d.contribution / mp.labourShare) * 100 })));
     const u = st.sims.unemployment * 0.3, u0 = S.sims.unemployment.init * 0.3;
-    share.unemployment = share.unemployment || { id: 'unemployment', kind: 'sim', name: 'Unemployment', c: 0 };
+    share.unemployment = share.unemployment || { id: 'unemployment', kind: 'sim', name: 'Paro', c: 0 };
     share.unemployment.c += -Math.log((1 - u) / (1 - u0)) * 100;
     Object.values(share).forEach((d) => items.push({ kind: d.kind, id: d.id, name: d.name, c: d.c }));
-    items.push({ kind: 'sim', id: 'immigration', name: 'Immigration & retirements (labour force)', c: -Math.log(mac.labourForce / m0.labourForce) * 100 });
+    items.push({ kind: 'sim', id: 'immigration', name: 'Población activa (inmigración y jubilaciones)', c: -Math.log(mac.labourForce / m0.labourForce) * 100 });
     const known = items.reduce((a, x) => a + x.c, 0);
-    items.unshift({ kind: 'sim', id: 'growth', name: 'Economic Growth', c: total - known });
+    items.unshift({ kind: 'sim', id: 'growth', name: 'Crecimiento económico', c: total - known });
     return { total, items: items.sort((a, b) => Math.abs(b.c) - Math.abs(a.c)) };
   }
 
@@ -1282,11 +1208,11 @@
     new Set(Object.keys(mNow).concat(Object.keys(mThen))).forEach((id) => {
       const d = (mNow[id] || 0) - (mThen[id] || 0);
       const e = M.eventById[id];
-      if (Math.abs(d) > 1e-4) out.push({ kind: 'event', id, name: e ? e.title : id === 'campaign' ? 'Campaign promises' : id === 'promise' ? 'Promises kept or broken' : id, delta: d });
+      if (Math.abs(d) > 1e-4) out.push({ kind: 'event', id, name: e ? e.title : id === 'campaign' ? 'Promesas de campaña' : id === 'promise' ? 'Promesas cumplidas o rotas' : id, delta: d });
     });
     if (S.groups[target] && snap.base && snap.base[target] != null) {
       const d = st.base[target] - snap.base[target];
-      if (Math.abs(d) > 1e-4) out.push({ kind: 'adaptation', id: target, name: d < 0 ? 'Voters got used to the good times' : 'Voters forgave and forgot', delta: d });
+      if (Math.abs(d) > 1e-4) out.push({ kind: 'adaptation', id: target, name: d < 0 ? 'Los votantes se acostumbran a lo bueno' : 'Los votantes perdonan y olvidan', delta: d });
     }
     return out.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
   }
@@ -1408,7 +1334,7 @@
     });
     st.modifiers.filter((m) => m.t === target).forEach((m) => {
       const e = M.eventById[m.src];
-      list.push({ kind: 'event', id: m.src, name: e ? e.title : m.src === 'campaign' ? 'Campaign: ' + m.label : m.label || m.src, amount: m.a, value: m.a * (m.left / m.turns), active: true });
+      list.push({ kind: 'event', id: m.src, name: e ? e.title : m.src === 'campaign' ? 'Campaña: ' + m.label : m.label || m.src, amount: m.a, value: m.a * (m.left / m.turns), active: true });
     });
     return list.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
   }
@@ -1461,6 +1387,6 @@
     newGame, step, restore, serialise, applyPolicy, changeCost, budget, policyBudget, runVote, seatsFrom,
     investiture, partyStance, perceivedPosition, alternativeGovernment, playerPosition, explain, outputs, previewGroups,
     resolveDilemma, callSnapElection, levelLabel, model, allParties, partyName, polVal, clamp, parseFx,
-    dhondt, negotiationOptions, acceptDeal, holdInvestiture, autoNegotiate, describeDemand, campaignOptions, launchCampaign, promiseCheck, wageDrivers, goalStatus, policyAvailable, voteFlows, deriveScenario, computeMacro, labourShareDrivers, TAX_BASES, eventRisks, TAX_RAISE_MULT, sizeDrivers, groupMults, electionAnalysis, causeDelta, activeEvents,
+    dhondt, campaignOptions, launchCampaign, promiseCheck, wageDrivers, goalStatus, policyAvailable, voteFlows, deriveScenario, computeMacro, labourShareDrivers, TAX_BASES, eventRisks, TAX_RAISE_MULT, sizeDrivers, groupMults, electionAnalysis, causeDelta, activeEvents,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

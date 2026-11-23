@@ -1,4 +1,4 @@
-/* Tiny SVG chart helpers (no dependencies) */
+/* Gráficos SVG sencillos, sin dependencias */
 (function (G) {
   'use strict';
   const C = {};
@@ -27,7 +27,7 @@
     const w = opts.w || 640, h = opts.h || 220;
     const padL = 38, padR = opts.padR != null ? opts.padR : 52, padT = 12, padB = 24;
     const n = labels.length;
-    if (n < 2) return `<div class="chart-empty">Not enough history yet — play a few quarters.</div>`;
+    if (n < 2) return `<div class="chart-empty">Todavía no hay datos suficientes.</div>`;
     let hi = opts.yMax != null ? opts.yMax : Math.max(...series.flatMap((s) => s.values)) * 1.1;
     let lo = opts.yMin != null ? opts.yMin : Math.min(0, ...series.flatMap((s) => s.values));
     if (hi - lo < 1e-6) hi = lo + 1;
@@ -53,7 +53,7 @@
       return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.bold ? 2.6 : 1.6}" stroke-linejoin="round" stroke-linecap="round"/>`;
     }).join('');
     const lab = ends.map((e) => `<text x="${w - padR + 6}" y="${e.y + 3}" class="endlab" fill="${e.s.color}">${e.s.label || ''}</text>`).join('');
-    return `<svg class="linechart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${opts.aria || 'Chart'}">${grid}${xl}${lines}${lab}</svg>`;
+    return `<svg class="linechart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${opts.aria || 'Gráfico'}">${grid}${xl}${lines}${lab}</svg>`;
   };
 
   // parts: [{ id, color, n, label }] in left→right order
@@ -84,7 +84,7 @@
     });
     for (; k < pts.length; k++) out += `<circle cx="${pts[k].x.toFixed(1)}" cy="${pts[k].y.toFixed(1)}" r="${sr.toFixed(2)}" class="empty-seat"/>`;
     const center = opts.center ? `<text x="${cx}" y="${cy - 14}" text-anchor="middle" class="hemi-num">${opts.center}</text><text x="${cx}" y="${cy + 1}" text-anchor="middle" class="hemi-sub">${opts.centerSub || ''}</text>` : '';
-    return `<svg class="hemicycle" viewBox="0 0 ${w} ${h}" role="img" aria-label="Parliament seats">${out}${center}</svg>`;
+    return `<svg class="hemicycle" viewBox="0 0 ${w} ${h}" role="img" aria-label="Escaños del Congreso">${out}${center}</svg>`;
   };
 
   // Two-column flow (Sankey) chart.
@@ -124,7 +124,7 @@
         ${p.h >= 9 ? `<text x="${tx}" y="${p.y + p.h / 2 - (n.sub && p.h >= 22 ? 3 : -4)}" text-anchor="${anchor}" class="sk-lab">${n.label}</text>` : ''}
         ${n.sub && p.h >= 22 ? `<text x="${tx}" y="${p.y + p.h / 2 + 11}" text-anchor="${anchor}" class="sk-sub">${n.sub}</text>` : ''}`;
     }).join('');
-    return `<svg class="sankey" viewBox="0 -4 ${w} ${h + 8}" role="img" aria-label="${opts.aria || 'Flow chart'}">${paths}${nodes(left, L, x0, 'end')}${nodes(right, R, x1, 'start')}</svg>`;
+    return `<svg class="sankey" viewBox="0 -4 ${w} ${h + 8}" role="img" aria-label="${opts.aria || 'Gráfico de flujos'}">${paths}${nodes(left, L, x0, 'end')}${nodes(right, R, x1, 'start')}</svg>`;
   };
 
   G.Charts = C;
