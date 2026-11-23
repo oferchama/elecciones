@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>La Moncloa</title>
+  <meta name="description" content="A political strategy simulator: govern Spain, balance the budget, keep your coalition together and win elections." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app" hidden>
+    <div class="masthead">
+    <header class="topbar">
+      <div class="brand">
+        <div>
+          <div class="brand-name">La Moncloa</div>
+          <div class="brand-sub" id="hdr-party"></div>
+        </div>
+      </div>
+      <div class="hdr-stats" id="hdr-stats"></div>
+      <div class="hdr-actions">
+        <button class="btn ghost icon" data-action="help" title="How to play" aria-label="How to play">?</button>
+        <button class="btn ghost icon" data-action="menu" title="Game menu" aria-label="Game menu">☰</button>
+        <button class="btn primary" data-action="next" id="btn-next">Next<span class="hide-sm">&nbsp;quarter</span> <span aria-hidden="true">→</span></button>
+      </div>
+    </header>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+    </div>
+    <main id="view" tabindex="-1"></main>
+    <aside id="drawer" aria-hidden="true"></aside>
+    <div id="drawer-scrim" data-action="close-drawer"></div>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toasts" aria-live="polite"></div>
+  <div id="heralds" aria-live="polite"></div>
+
+  <!-- Map libraries (optional: the game works without them) -->
+  <script src="https://cdn.jsdelivr.net/npm/d3-array@3.2.4/dist/d3-array.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/dist/d3-geo.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-composite-projections@1.4.0/d3-composite-projections.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+  <script src="js/scenario-spain.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>
