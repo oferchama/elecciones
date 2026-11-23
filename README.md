@@ -1,5 +1,7 @@
 # La Moncloa: a Spanish political simulator
 
+**Play it online: [elecciones.regalitogames.com](https://elecciones.regalitogames.com)**
+
 A turn-based government simulator set in Spain. You lead a minority government: you set policy, balance the budget, keep voter groups happy and stay in power through Spain's real electoral system.
 
 ## Play
