@@ -198,6 +198,7 @@ main { padding: 22px 24px 60px; max-width: 1360px; margin: 0 auto; outline: none
 .tbl tr.click { cursor: pointer; }
 .tbl tr.click:hover td { background: var(--surface); }
 .num { text-align: right; white-space: nowrap; }
+.tbl th.num { text-align: right; }
 .bar { height: 6px; background: var(--surface-3); position: relative; overflow: hidden; min-width: 60px; }
 .bar > b { position: absolute; left: 0; top: 0; bottom: 0; }
 .mood { display: flex; align-items: center; gap: 8px; }
@@ -354,7 +355,10 @@ input[type='range'] { width: 100%; accent-color: var(--accent); height: 28px; }
 .opt-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--ink); border-left: 1px solid var(--ink); }
 .opt-grid.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .opt-grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.opt-grid.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.opt-grid.c5 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+/* Cinco opciones no caben en una fila con nombres como «Centroizquierda»: tres arriba y dos abajo */
+.opt-grid.c5 button { grid-column: span 2; }
+.opt-grid.c5 button:nth-child(n+4) { grid-column: span 3; }
 .opt-grid button { border: 0; border-right: 1px solid var(--ink); border-bottom: 1px solid var(--ink); background: none; padding: 8px 6px; cursor: pointer; font-weight: 600; font-size: 12.5px; color: var(--ink-2); min-height: 38px; line-height: 1.15; }
 .opt-grid button:hover { background: var(--surface-2); }
 .opt-grid button[aria-pressed='true'] { background: var(--ink); color: var(--bg); }
@@ -415,10 +419,6 @@ input[type='range'] { width: 100%; accent-color: var(--accent); height: 28px; }
   .card { overflow-x: auto; }
   .tbl td, .tbl th { padding: 7px 5px; }
   .opt-grid.c4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* Cinco opciones no caben en una fila de móvil: tres arriba y dos abajo, ocupando todo el ancho */
-  .opt-grid.c5 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .opt-grid.c5 button { grid-column: span 2; min-height: 44px; }
-  .opt-grid.c5 button:nth-child(n+4) { grid-column: span 3; }
   .opt-grid button { min-height: 44px; }
   .swatch { width: 30px; height: 30px; }
   .form { padding: 16px; }
@@ -557,3 +557,16 @@ input[type='range'] { width: 100%; accent-color: var(--accent); height: 28px; }
 .news .d { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 /* Con un diálogo abierto, los avisos van arriba para no tapar sus botones */
 body:has(#modal-root .modal-wrap) #toasts { bottom: auto; top: 16px; }
+/* Resumen: las redes a la izquierda, el ánimo de los grupos a la derecha */
+.ov-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.ov-side { display: flex; flex-direction: column; gap: 16px; }
+.sp-compact .sp-bio { display: none; }
+.sp-compact .sp:last-child { border-bottom: 0; }
+@media (max-width: 900px) { .ov-grid { grid-template-columns: 1fr; } }
+/* Pie de la pantalla de inicio y enlaces del menú */
+.site-foot { max-width: 1040px; width: 100%; margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 12.5px; color: var(--ink-3); }
+.site-foot a, .menu-link { color: var(--ink-2); }
+.menu-link { display: block; padding: 8px 12px; font-size: 13px; text-decoration: none; border-top: 1px solid var(--line); }
+.menu-link + .menu-link { border-top: 0; }
+.menu-link:hover { background: var(--surface-2); }
+.map-credit { font-size: 11px; color: var(--ink-3); margin-top: 6px; }

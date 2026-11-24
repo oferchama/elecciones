@@ -6,7 +6,7 @@ Un juego de estrategia por turnos en el que presides el Gobierno de España. Dec
 
 ## Cómo jugar
 
-Abre `index.html` con doble clic: no hace falta instalar nada. Con conexión, también carga las fuentes de Google y el mapa por comunidades (límites del IGN a través de [es-atlas](https://github.com/martgnz/es-atlas)); sin conexión, todo lo demás funciona igual.
+Abre `index.html` con doble clic: no hace falta instalar nada. Todo, fuentes y librerías incluidas, se sirve desde la propia carpeta: el juego no hace peticiones a terceros. Desde un archivo local el navegador no deja cargar el mapa por comunidades; con el servidor de abajo, sí.
 
 También puedes servirlo en local:
 
@@ -37,6 +37,11 @@ Todos los partidos son ficticios.
 | `js/engine.js` | Simulación genérica: efectos, presupuesto, votantes, D'Hondt e investidura |
 | `js/ui.js`, `js/charts.js` | Interfaz y gráficos SVG |
 | `js/social.js` | Las publicaciones de «En las redes»: personajes, medios y plantillas |
+| `vendor/` | d3-array, d3-geo, d3-composite-projections y topojson-client (ISC/BSD), y los límites provinciales de [es-atlas](https://github.com/martgnz/es-atlas) (© Instituto Geográfico Nacional, CC BY 4.0) |
+| `fonts/`, `css/fonts.css` | Libre Franklin y Source Serif 4 (SIL Open Font License) |
+| `assets/` | Icono y la imagen para compartir el enlace |
 | `css/style.css` | Estilos (claro y oscuro) |
 
 Para crear otro país basta con copiar `scenario-spain.js` y cambiar los datos: el motor no sabe nada de España.
+
+Contacto: [hello@regalitogames.com](mailto:hello@regalitogames.com)

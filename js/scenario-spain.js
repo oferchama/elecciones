@@ -1234,7 +1234,7 @@
 
   // Province map (IGN boundaries via es-atlas). Keys: INE province codes.
   S.map = {
-    url: 'https://cdn.jsdelivr.net/npm/es-atlas@0.6.0/es/provinces.json',
+    url: 'vendor/provinces.json', // es-atlas 0.6.0 (límites del IGN), alojado aquí
     object: 'provinces', regionsObject: 'autonomous_regions', projection: 'geoConicConformalSpain',
     regionCodes: { '01': 'AND', '02': 'ARA', '03': 'AST', '04': 'BAL', '05': 'CAN', '06': 'CNT', '07': 'CYL', '08': 'CLM', '09': 'CAT', '10': 'VAL', '11': 'EXT', '12': 'GAL', '13': 'MAD', '14': 'MUR', '15': 'NAV', '16': 'PV', '17': 'RIO', '18': 'CEU', '19': 'MEL' },
     inset: ['05'],

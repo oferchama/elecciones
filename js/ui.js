@@ -92,7 +92,7 @@
 
   const TABS = [
     ['overview', 'Resumen'], ['policies', 'Políticas'], ['indicators', 'País'], ['voters', 'Votantes'],
-    ['parliament', 'Parlamento'], ['budget', 'Presupuesto'], ['regions', 'Territorio'], ['news', 'Noticias'],
+    ['parliament', 'Parlamento'], ['budget', 'Presupuesto'], ['news', 'Noticias'],
   ];
   function renderTabs() {
     const bad = S.situations.filter((s) => s.bad && st.situations[s.id]).length;
@@ -143,6 +143,9 @@
     const grpRow = (x) => `<tr class="click" data-action="open" data-kind="group" data-id="${x.g}"><td>${esc(S.groups[x.g].name)}</td><td style="width:45%"><div class="mood"><div class="bar"><b style="width:${(x.h * 100).toFixed(0)}%;background:${moodColor(x.h)}"></b></div><span class="small num">${(x.h * 100).toFixed(0)}</span></div></td></tr>`;
     return `
       ${nowStrip()}
+      <div class="section-title"><h2>Estado de la nación</h2></div>
+      <div class="kpis">${kpis}${defs}</div>
+      <div class="section-title"><h2>Elecciones</h2></div>
       <div class="hero">
         <div class="card hero-main">
           <div class="row between wrap">
@@ -157,19 +160,15 @@
           </div>
           ${pollChart(260)}
         </div>
-        <div class="card">
-          <div class="card-h"><h3>Congreso según las encuestas</h3><span class="faint small">${S.chamberSeats} escaños · mayoría ${S.majority}</span></div>
-          ${hemi(proj, { w: 420 })}
-          ${legend(proj)}
-        </div>
+        <div class="card"><div class="card-h"><h3>Si hoy hubiera elecciones</h3><span class="faint small">Según las encuestas</span></div>${coalitionBlock(inv)}${hemi(proj)}${legend(proj)}</div>
       </div>
       ${goalsCard()}
-      <div class="section-title"><h2>Estado de la nación</h2></div>
-      <div class="kpis">${kpis}${defs}</div>
-      <div class="grid g3" style="margin-top:24px">
-        <div class="card"><div class="card-h"><h3>Los más descontentos</h3></div><table class="tbl">${angry.map(grpRow).join('')}</table></div>
-        <div class="card"><div class="card-h"><h3>Los más satisfechos</h3></div><table class="tbl">${happy.map(grpRow).join('')}</table></div>
-        <div class="card"><div class="card-h"><h3>Últimas noticias</h3><button class="btn sm ghost" data-action="tab" data-tab="news">Todas</button></div>${newsList(st.news.slice(0, 4))}</div>
+      <div class="ov-grid" style="margin-top:24px">
+        ${socialCard()}
+        <div class="ov-side">
+          <div class="card"><div class="card-h"><h3>Los más descontentos</h3></div><table class="tbl">${angry.map(grpRow).join('')}</table></div>
+          <div class="card"><div class="card-h"><h3>Los más satisfechos</h3></div><table class="tbl">${happy.map(grpRow).join('')}</table></div>
+        </div>
       </div>
       <div class="grid g2" style="margin-top:16px">${risksCard()}</div>`;
   }
@@ -412,7 +411,9 @@
           }).join('')}
         </div>
       </div>
-      <div class="grid g2" style="margin-top:16px">${targetsCard()}</div>`;
+      <div class="grid g2" style="margin-top:16px">${targetsCard()}</div>
+      <div class="section-title"><h2>Por comunidades</h2></div>
+      ${regionsSection()}`;
   }
 
   function positionMap() {
@@ -594,7 +595,7 @@
     MAP.loading = true;
     fetch(S.map.url).then((r) => r.json()).then((j) => { MAP.data = j; })
       .catch(() => { MAP.failed = true; })
-      .finally(() => { MAP.loading = false; if (ui.tab === 'regions') renderView(); });
+      .finally(() => { MAP.loading = false; if (ui.tab === 'voters') renderView(); });
   }
   function mapCard(regs) {
     if (!S.map) return '';
@@ -631,10 +632,12 @@
       : `<span><i class="dot" style="background:${pColor};opacity:.15"></i>5 %</span><span><i class="dot" style="background:${pColor};opacity:.5"></i>25 %</span><span><i class="dot" style="background:${pColor}"></i>50 % o más</span>`;
     return `<div class="card">${head}
       <svg class="spain-map" viewBox="0 0 ${w} ${h}" role="img" aria-label="Mapa de España por comunidades autónomas">${shapes}${frame}</svg>
-      <div class="map-legend">${MAP.mode === 'lead' ? '<span class="faint">Comunidades ganadas:</span>' : '<span class="faint">Tu porcentaje de voto:</span>'}${lg}</div></div>`;
+      <div class="map-legend">${MAP.mode === 'lead' ? '<span class="faint">Comunidades ganadas:</span>' : '<span class="faint">Tu porcentaje de voto:</span>'}${lg}</div>
+      <div class="map-credit">Límites: © Instituto Geográfico Nacional (CC BY 4.0), vía es-atlas.</div></div>`;
   }
 
-  function viewRegions() {
+  // El mapa y la tabla por comunidades, dentro de Votantes
+  function regionsSection() {
     const regs = regionStats();
     const order = st.lastVote.partyOrder;
     const rows = Object.keys(S.regions).filter((k) => regs[k]).map((k) => {
@@ -649,7 +652,7 @@
         <td class="num" data-label="Tu voto">${pct(r.mine)}</td>
         <td data-label="Gana"><span class="row"><i class="dot" style="background:${leadP.color}"></i>${esc(leadP.short)}</span></td></tr>`;
     }).join('');
-    return `${mapCard(regs)}<div class="card" style="margin-top:28px">
+    return `${mapCard(regs)}<div class="card" style="margin-top:16px">
       <div class="card-h"><h3>Por comunidades autónomas</h3><span class="faint small">Si hoy hubiera elecciones</span></div>
       <table class="tbl stack"><thead><tr><th>Comunidad</th><th class="num">Escaños</th><th class="num">Tus escaños</th><th>Reparto</th><th class="num">Tu voto</th><th>Gana</th></tr></thead><tbody>${rows}</tbody></table>
     </div>`;
@@ -704,6 +707,14 @@
         ${p.reply ? postHtml(p.reply, true) : ''}
       </div>
     </article>`;
+  }
+  // Lo último de las redes, en el resumen
+  function socialCard() {
+    const posts = st.social || [];
+    if (!posts.length) return '<div></div>';
+    const latest = posts.filter((p) => p.turn === posts[0].turn).slice(0, 5);
+    return `<div class="card sp-feed sp-compact"><div class="card-h"><h3>En las redes</h3><button class="btn sm ghost" data-action="tab" data-tab="news">Ver más</button></div>
+      ${latest.map((p) => postHtml(p)).join('')}</div>`;
   }
   function socialSection() {
     const posts = st.social || [];
@@ -1033,7 +1044,7 @@
 
   // ── Render principal ────────────────────────────────────────
   function renderView() {
-    const fns = { overview: viewOverview, policies: viewPolicies, indicators: viewIndicators, voters: viewVoters, parliament: viewParliament, budget: viewBudget, regions: viewRegions, news: viewNews };
+    const fns = { overview: viewOverview, policies: viewPolicies, indicators: viewIndicators, voters: viewVoters, parliament: viewParliament, budget: viewBudget, news: viewNews };
     $('#view').innerHTML = fns[ui.tab]();
   }
   function render() { renderHeader(); renderTabs(); renderView(); renderDrawer(); }
@@ -1164,6 +1175,7 @@
         <p style="margin:0">Cambia las políticas para transformar el país. Cada cambio cuesta capital político, que ganas cada trimestre.</p>
         <p style="margin:0">Mantén contentos a los votantes, a tus socios en el Congreso y las cuentas bajo control.</p>
         <p style="margin:0">Si pierdes las elecciones o una moción de censura, se acaba la partida.</p>
+        <p class="small faint" style="margin:8px 0 0">La partida se guarda solo en este navegador. ¿Ideas o errores? Escríbenos a <a href="mailto:${CONTACT}">${CONTACT}</a>.</p>
       </div>
       <div class="modal-foot"><button class="btn primary" data-action="close-modal">Entendido</button></div>`, { dismiss: true });
   }
@@ -1173,12 +1185,20 @@
     if (ex) { ex.remove(); return; }
     const m = document.createElement('div');
     m.className = 'menu';
-    m.innerHTML = `<button data-action="new-game-confirm">Nueva partida…</button><button data-action="theme">Modo claro u oscuro</button><button data-action="export">Descargar la partida</button><button data-action="import">Cargar una partida…</button>`;
+    m.innerHTML = `<button data-action="new-game-confirm">Nueva partida…</button><button data-action="theme">Modo claro u oscuro</button><button data-action="export">Descargar la partida</button><button data-action="import">Cargar una partida…</button><a class="menu-link" href="mailto:${CONTACT}">Contacto: ${CONTACT}</a><a class="menu-link" href="https://regalitogames.com/" target="_blank" rel="noopener">Más juegos de Regalito Games ↗</a>`;
     document.body.appendChild(m);
     setTimeout(() => document.addEventListener('click', function off(ev) { if (!m.contains(ev.target)) { m.remove(); document.removeEventListener('click', off); } }), 0);
   }
 
   // ── Pantalla de inicio ──────────────────────────────────────
+  const CONTACT = 'hello@regalitogames.com';
+  function siteFooter() {
+    return `<footer class="site-foot">
+      <span>Un juego de <a href="https://regalitogames.com/" target="_blank" rel="noopener">Regalito Games</a></span>
+      <span>Contacto: <a href="mailto:${CONTACT}">${CONTACT}</a></span>
+      <span>Partidos, personajes y medios ficticios. La partida se guarda solo en tu navegador. Sin cookies: solo contamos cuántas visitas llegan, sin saber quién eres.</span>
+    </footer>`;
+  }
   const COLORS = ['#d7263d', '#b0233a', '#7a2ea8', '#e4572e', '#e89f00', '#119da4', '#2a9d3f', '#ff6f91', '#1f5ea8', '#2a4d8f', '#c08b00'];
   const DIFF = { easy: 'Fácil', normal: 'Normal', hard: 'Difícil' };
   function showStart() {
@@ -1211,7 +1231,7 @@
           <div class="field"><label>Dificultad</label><div class="seg">${['easy', 'normal', 'hard'].map((d) => `<button aria-pressed="${cfg.difficulty === d}" data-action="cfg-diff" data-d="${d}">${DIFF[d]}</button>`).join('')}</div></div>
           <button class="btn primary" data-action="start" style="padding:12px">Empezar</button>
         </div>
-      </div></div>`;
+      </div>${siteFooter()}</div>`;
     };
     draw();
     ui.startCfg = cfg;
@@ -1415,7 +1435,26 @@
     }
   });
 
+  // ── Visitas ─────────────────────────────────────────────────
+  // Un aviso por cada carga de la página, con la etiqueta de campaña del enlace
+  // (utm_content, si no utm_campaign, si no utm_source). Lo cuenta el contador
+  // de Regalito Games: un día, un evento, una etiqueta y un número. Nada se
+  // guarda en el dispositivo del jugador ni se sabe quién es. Solo en la web
+  // publicada, para que las pruebas en local no cuenten.
+  function countVisit() {
+    if (location.hostname !== 'elecciones.regalitogames.com') return;
+    try {
+      const q = new URLSearchParams(location.search);
+      const tag = (q.get('utm_content') || q.get('utm_campaign') || q.get('utm_source') || '').slice(0, 40) || null;
+      const body = JSON.stringify({ event: 'moncloa', tag });
+      const url = 'https://regalitogames.com/api/tick';
+      if (navigator.sendBeacon) navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }));
+      else fetch(url, { method: 'POST', body, mode: 'no-cors', keepalive: true }).catch(() => {});
+    } catch (e) { /* una cifra nunca debe romper el juego */ }
+  }
+
   // ── Arranque ────────────────────────────────────────────────
+  countVisit();
   try { const th = localStorage.getItem('moncloa-theme'); if (th) document.documentElement.dataset.theme = th; } catch (e) { /* nada */ }
   const saved = store.get();
   if (saved && saved.version === 3 && !saved.gameOver && saved.scenario === S.id && new URLSearchParams(location.search).has('continue')) loadGame(saved);

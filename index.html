@@ -3,12 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>La Moncloa</title>
-  <meta name="description" content="Simulador político: gobierna España, cuadra las cuentas, mantén a tus socios y gana las elecciones." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+  <title>La Moncloa · Simulador político de España</title>
+  <meta name="description" content="Gobierna España: decide las políticas, cuadra las cuentas, mantén a tus votantes y a tus socios, y sobrevive a las elecciones. Gratis, en el navegador." />
+  <link rel="canonical" href="https://elecciones.regalitogames.com/" />
+  <meta name="theme-color" content="#f5f2ec" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icon-180.png" />
+  <!-- Vista previa al compartir el enlace -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Regalito Games" />
+  <meta property="og:locale" content="es_ES" />
+  <meta property="og:title" content="La Moncloa · Simulador político de España" />
+  <meta property="og:description" content="Gobierna España, cuadra las cuentas y sobrevive a las urnas." />
+  <meta property="og:url" content="https://elecciones.regalitogames.com/" />
+  <meta property="og:image" content="https://elecciones.regalitogames.com/assets/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="La Moncloa: un hemiciclo de 350 escaños de colores." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <!-- Todo se sirve desde aquí: sin fuentes ni librerías de terceros.
+       ?v= cambia en cada versión para que nadie mezcle archivos viejos y nuevos -->
+  <link rel="stylesheet" href="css/fonts.css?v=20261124b" />
+  <link rel="stylesheet" href="css/style.css?v=20261124b" />
 </head>
 <body>
   <div id="app" hidden>
@@ -36,16 +52,17 @@
   <div id="modal-root"></div>
   <div id="toasts" aria-live="polite"></div>
   <div id="heralds" aria-live="polite"></div>
+  <noscript><p style="padding:24px;font-family:serif">La Moncloa necesita JavaScript para funcionar.</p></noscript>
 
-  <!-- Librerías del mapa (opcionales) -->
-  <script src="https://cdn.jsdelivr.net/npm/d3-array@3.2.4/dist/d3-array.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/dist/d3-geo.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/d3-composite-projections@1.4.0/d3-composite-projections.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
-  <script src="js/scenario-spain.js"></script>
-  <script src="js/engine.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/social.js"></script>
-  <script src="js/ui.js"></script>
+  <!-- Librerías del mapa (d3-geo, topojson), alojadas aquí -->
+  <script src="vendor/d3-array.min.js"></script>
+  <script src="vendor/d3-geo.min.js"></script>
+  <script src="vendor/d3-composite-projections.min.js"></script>
+  <script src="vendor/topojson-client.min.js"></script>
+  <script src="js/scenario-spain.js?v=20261124b"></script>
+  <script src="js/engine.js?v=20261124b"></script>
+  <script src="js/charts.js?v=20261124b"></script>
+  <script src="js/social.js?v=20261124b"></script>
+  <script src="js/ui.js?v=20261124b"></script>
 </body>
 </html>
